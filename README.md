@@ -11,6 +11,24 @@ The results of running the program on Any.run can be found [here](https://any.ru
 
 ## Interseting Parts in the Decompiled Code
 
+The processCmd() function is where the inbound commands from the command server are getting turned into function calls. Drilling into this function we can observe how the commands are processed.
+
+There are multiple command cases that this function deals with, based on the input command name. The options are as follows:
+
+- `TCP`
+- `UDP`
+- `VSE`
+- `STDHEX`
+- `STD`
+- `NFODROP`
+- `OVHKILL`
+- `XMAS`
+- `CRUSH`
+- `STOMP`
+- `STOP`
+
+It has the ability to parse all the input commands and fork each command off into parallel helper functions that will actually execute what each command does.
+
 ## Bot behaviour
 
 ## Python Remake
