@@ -704,6 +704,27 @@ void processCmd(int param_count, char **params) {
 
 
 ## Virus Total Report
+
+https://www.virustotal.com/gui/ip-address/45.11.229.181/relations Shows which files were communicating with this IP-Address. We can also observe in this list a shell script, sakura.sh.
+
+This script atempts to change its currecnt directory and then proceedes to download several files. These files are likely some of the payload that our bot is atempting to gather as well:
+
+```
+- 'm-i.p-s.Sakura`
+- `m-p.s-l.Sakura`
+- `s-h.4-.Sakura`
+- `x-8.6-.Sakura`
+- `a-r.m-6.Sakura`
+- `x-3.2-.Sakura`
+- `a-r.m-7.Sakura`
+- `p-p.c-.Sakura`
+- `i-5.8-6.Sakura`
+- `m-6.8-k.Sakura`
+- `a-r.m-4.Sakura`
+- `a-r.m-5.Sakura`
+```
+
+
 ## Dynamic Analysis
 ### Any.run Results
 The results of running the program on Any.run can be found [here](https://any.run/report/3b1be8499ec382dfafbc496a73dea2794f6dd201b3e46a4128c7fcd88e8c17c2/32322955-6166-4ee8-9440-baa59267c993), when using a proxy a slightly different result can be found [here](https://any.run/report/963a062aa8d6950fa219284859f9c6dc527eb69480b78fd614bd6959d604e7a1/e10b7092-359e-45eb-957a-d520ce6a8e28)
