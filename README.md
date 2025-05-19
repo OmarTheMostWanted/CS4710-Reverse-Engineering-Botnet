@@ -884,7 +884,11 @@ if (strcmp(commands[0], "UDP") == 0) {
 
 We can observe that ourbotnet atempts to communicate with the C2 server at 45.11.229.181:606. This is a known endpoint for Gafgyt botnet variants used for coordinated DDoS attacks. However this specific server seems to be unresponsive and offline currently as current atempts to communicate with it result in a timeout. 
 
-![Any.run](https://i.imgur.com/EkZ1fv2.jpeg) dynamic analysis captures the packet sent out from our sample, we can recreate this packet and atempt to communicate with the C2 server however it ![ends up in a timeout](https://i.imgur.com/9QCyN64.png) which indicates the server is currently dead.
+![Any.run](https://i.imgur.com/EkZ1fv2.jpeg) 
+
+Any.run dynamic analysis captures the packet sent out from our sample, we can recreate this packet and atempt to communicate with the C2 server however it ends up in a timeout which indicates the server is currently dead.
+
+![CMD test](https://i.imgur.com/9QCyN64.png) 
 
 
 https://threatfox.abuse.ch/ioc/1460615/ - Flags it as a botnet endpoint linked to the Bashlite malware.
