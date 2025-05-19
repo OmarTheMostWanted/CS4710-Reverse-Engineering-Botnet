@@ -702,6 +702,23 @@ void processCmd(int param_count, char **params) {
 
 ---
 
+Attack method available in Bot123
+
+| Function Name          | Command | Description                                                                                   | Present in Recent Bashlite Forks |
+|-----------------------|---------|-----------------------------------------------------------------------------------------------|---------------------------------|
+| ftcp                  | TCP     | Customizable TCP flood attack                                                                | ✔                               |
+| SendUDP               | UDP     | UDP flood attack                                                                             | ✔                               |
+| vseattack             | VSE     | UDP amplification attack for Valve Source Engine game servers                               | ✔                               |
+| SendSTDHEX            | STDHEX  | Simple TCP flood attack with malformed hex payload                                          | ❌                              |
+| SendSTD               | STD     | Simple TCP flood attack                                                                      | ✔                               |
+| stdhexflood           | NFODROP | Simple TCP flood attack with large garbage payload                                          | ❌                              |
+| SendSTD_HEX           | OVHKILL | Simple TCP flood attack likely directed at DayZ game servers                                | ✔                               |
+| rtcp                  | XMAS    | Simple TCP flood attack with specific TCP flags set, resembling Xmas attack.                 | ✔                               |
+| astd and atcp         | CRUSH   | Attack combining simple TCP flood and customizable TCP flood.                               | ✔                               |
+| astd, atcp and audp   | STOMP   | Mixed flooding attack using simple/customizable TCP and UDP                                | ✔                               |
+| kill                  | STOP    | Stops all attacks                                                                            | ✔                               |
+
+
 
 ## Virus Total Report
 
