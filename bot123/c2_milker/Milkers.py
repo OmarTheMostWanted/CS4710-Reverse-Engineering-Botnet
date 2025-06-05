@@ -120,7 +120,7 @@ def initConnection():
     if b":" in ip:
         ip_split = ip.split(b":")
         ip = ip_split[0]
-        port_number = int(ip_split[1])
+        port_number = int(ip_split[1].strip(b"\x00"))  # Strip null bytes
 
     # Create a new socket
     mainCommSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
