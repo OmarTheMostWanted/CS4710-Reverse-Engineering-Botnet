@@ -1,0 +1,81 @@
+# Nmap 7.92 scan initiated Tue Jun 10 03:08:36 2025 as: nmap -A -p- -T4 -v -oN full_scan_205.185.115.242.txt 205.185.115.242
+Nmap scan report for LASVEGAS.DNSLIBRE.COM.MX (205.185.115.242)
+Host is up (0.15s latency).
+Not shown: 65521 closed tcp ports (reset)
+PORT     STATE    SERVICE          VERSION
+21/tcp   open     ftp              vsftpd 3.0.2
+| ftp-anon: Anonymous FTP login allowed (FTP code 230)
+| -rwxr-xr-x    1 0        0          108417 May 13 19:37 a-r.m-4.Sakura
+| -rwxr-xr-x    1 0        0          100871 May 13 19:37 a-r.m-5.Sakura
+| -rwxr-xr-x    1 0        0          121007 May 13 19:37 a-r.m-6.Sakura
+| -rwxr-xr-x    1 0        0           93907 May 13 19:37 a-r.m-7.Sakura
+| -rw-r--r--    1 0        0            2718 May 13 19:37 ftp1.sh
+| -rwxr-xr-x    1 0        0           98923 May 13 19:37 i-5.8-6.Sakura
+| -rwxr-xr-x    1 0        0          159896 May 13 19:37 m-6.8-k.Sakura
+| -rwxr-xr-x    1 0        0          125962 May 13 19:37 m-i.p-s.Sakura
+| -rwxr-xr-x    1 0        0          126042 May 13 19:37 m-p.s-l.Sakura
+| -rwxr-xr-x    1 0        0          108417 May 13 19:37 p-p.c-.Sakura
+| drwxr-xr-x    2 0        0            4096 Jun 09  2021 pub
+| -rwxr-xr-x    1 0        0           88733 May 13 19:37 s-h.4-.Sakura
+| -rwxr-xr-x    1 0        0           84999 May 13 19:37 x-3.2-.Sakura
+|_-rwxr-xr-x    1 0        0           94679 May 13 19:37 x-8.6-.Sakura
+| ftp-syst: 
+|   STAT: 
+| FTP server status:
+|      Connected to ::ffff:212.102.63.150
+|      Logged in as ftp
+|      TYPE: ASCII
+|      No session bandwidth limit
+|      Session timeout in seconds is 300
+|      Control connection is plain text
+|      Data connections will be plain text
+|      At session startup, client count was 3
+|      vsFTPd 3.0.2 - secure, fast, stable
+|_End of status
+22/tcp   open     ssh              OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey: 
+|   2048 b9:35:4d:1d:0d:1b:a4:d8:3b:b7:e7:8c:14:16:a5:c6 (RSA)
+|   256 52:a6:10:6a:65:74:21:04:ad:2d:11:bb:59:39:80:3e (ECDSA)
+|_  256 18:3f:a4:dd:af:e2:e6:19:9d:0a:a1:15:f9:7c:92:01 (ED25519)
+25/tcp   filtered smtp
+53/tcp   filtered domain
+80/tcp   open     http             Apache httpd 2.4.6 ((CentOS))
+|_http-title: Apache HTTP Server Test Page powered by CentOS
+| http-methods: 
+|   Supported Methods: OPTIONS GET HEAD POST TRACE
+|_  Potentially risky methods: TRACE
+|_http-server-header: Apache/2.4.6 (CentOS)
+389/tcp  filtered ldap
+465/tcp  filtered smtps
+587/tcp  filtered submission
+636/tcp  filtered ldapssl
+646/tcp  filtered ldp
+1099/tcp filtered rmiregistry
+1389/tcp filtered iclpv-dm
+3268/tcp filtered globalcatLDAP
+3269/tcp filtered globalcatLDAPssl
+Aggressive OS guesses: Linux 3.10 - 4.11 (95%), Linux 5.1 (94%), Linux 2.6.32 (94%), HP P2000 G3 NAS device (93%), Linux 3.18 (93%), Linux 3.2 - 4.9 (93%), Linux 3.13 (92%), Linux 3.13 or 4.2 (92%), Linux 3.16 - 4.6 (92%), Linux 4.10 (92%)
+No exact OS matches for host (test conditions non-ideal).
+Uptime guess: 27.237 days (since Tue May 13 21:29:32 2025)
+Network Distance: 14 hops
+TCP Sequence Prediction: Difficulty=256 (Good luck!)
+IP ID Sequence Generation: All zeros
+Service Info: OS: Unix
+
+TRACEROUTE (using port 80/tcp)
+HOP RTT       ADDRESS
+1   22.98 ms  10.20.18.1
+2   22.77 ms  unn-212-102-63-189.cdn77.com (212.102.63.189)
+3   22.99 ms  vl223.lon-eq7-core-1.cdn77.com (79.127.192.226)
+4   22.90 ms  coreb-lon.cdn77.com (79.127.193.145)
+5   24.14 ms  ae6-2077.lon10.core-backbone.com (80.255.14.46)
+6   ... 7
+8   126.76 ms 6939-3356-kac.sp.lumen.tech (4.68.71.214)
+9   ... 11
+12  163.84 ms 100ge0-34.core1.las1.he.net (184.104.193.178)
+13  ...
+14  148.26 ms LASVEGAS.DNSLIBRE.COM.MX (205.185.115.242)
+
+Read data files from: /usr/bin/../share/nmap
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Tue Jun 10 03:10:34 2025 -- 1 IP address (1 host up) scanned in 117.62 seconds
