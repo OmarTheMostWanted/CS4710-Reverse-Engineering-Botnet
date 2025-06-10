@@ -16,11 +16,14 @@ pids = []
 buffer_size = 4108
 
 currentServer = 0
-commServer = ["127.0.0.1:6969"]  # Example placeholder for server list
+commServer = []
+
+
+# debug
+daemon = False
 
 
 def init_rand(param_1):
-
     # Initialize global variables
     DAT_006ef984 = param_1 - 0x61c88647
     _DAT_006ef988 = param_1 + 0x3c6ef372
@@ -31,9 +34,9 @@ def init_rand(param_1):
     for local_c in range(3, 0x1000):
         Q[local_c] = local_c ^ Q[local_c - 3] ^ Q[local_c - 2] ^ 0x9e3779b9
 
+
 def getOurIP():
     global ourIP, macAddress
-
     try:
         # Create a socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,18 +57,19 @@ def getOurIP():
                 interface = None
 
         # if interface:
-            # Get the MAC address of the interface
-            # mac = fcntl.ioctl(
-            #     sock.fileno(),
-            #     0x8927,  # SIOCGIFHWADDR
-            #     struct.pack('256s', interface[:15].encode('utf-8'))
-            # )
-            # macAddress = list(mac[18:24])
+        # Get the MAC address of the interface
+        # mac = fcntl.ioctl(
+        #     sock.fileno(),
+        #     0x8927,  # SIOCGIFHWADDR
+        #     struct.pack('256s', interface[:15].encode('utf-8'))
+        # )
+        # macAddress = list(mac[18:24])
 
         sock.close()
         return 1
     except Exception:
         return 0
+
 
 def fdgets(buffer, max_size, fd):
     """
@@ -94,6 +98,7 @@ def fdgets(buffer, max_size, fd):
     if local_c == 0:
         return 0
     return local_10
+
 
 def initConnection():
     global mainCommSock, currentServer, commServer
@@ -129,6 +134,7 @@ def initConnection():
     success = connectTimeout(mainCommSock, ip.decode(), port_number, 30)
     return success == 0
 
+
 def connectTimeout(sock, ip, port, timeout):
     """
     Attempts to connect to a server with a timeout.
@@ -142,32 +148,42 @@ def connectTimeout(sock, ip, port, timeout):
     Returns:
         bool: True if the connection is successful, False otherwise.
     """
-    try:
-        # Set the socket to non-blocking mode
-        flags = fcntl.fcntl(sock, fcntl.F_GETFL)
-        fcntl.fcntl(sock, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    print(f"\033[1;32mConnecting to {ip}:{port} with timeout {timeout}s...\033[0m")
+    import fcntl, os, select, socket, errno
+    flags = fcntl.fcntl(sock, fcntl.F_GETFL)
+    fcntl.fcntl(sock, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-        # Attempt to connect
-        try:
-            sock.connect((ip, port))
-        except BlockingIOError:
-            pass
-
-        # Use select to wait for the connection to complete
-        ready_to_write, _, _ = select.select([], [sock], [], timeout)
-        if not ready_to_write:
-            return False
-
-        # Check for socket errors
-        error = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
-        if error != 0:
-            return False
-
-        # Restore the socket to blocking mode
-        fcntl.fcntl(sock, fcntl.F_SETFL, flags)
-        return True
-    except Exception:
+    # Initiate non-blocking connect
+    err = sock.connect_ex((ip, port))
+    if err not in (0, errno.EINPROGRESS, errno.EALREADY, errno.EWOULDBLOCK):
         return False
+
+    # Wait for write readiness or errors
+    ready_to_read, ready_to_write, in_error = select.select([], [sock], [sock], timeout)
+    if sock in in_error or sock not in ready_to_write:
+        return False
+
+    # Check final socket error
+    error = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+    if error != 0:
+        return False
+
+    # Restore blocking mode
+    fcntl.fcntl(sock, fcntl.F_SETFL, flags)
+    return True
+
+    # Simple blocking connect (commented out for original functionality)
+    # sock.settimeout(timeout)
+    # try:
+    #     sock.connect((ip, port))
+    #     sock.settimeout(None)
+    #     return True
+    # except socket.timeout:
+    #     return False
+    # except Exception as e:
+    #     print(f"Connection error: {e}")
+    #     return False
+
 
 def getArch():
     return "x86_64"
@@ -190,6 +206,7 @@ def getPortz():
         return "22"
     else:
         return "Unknown Port"
+
 
 def sockprintf(sock, message, *args):
     """
@@ -215,6 +232,7 @@ def sockprintf(sock, message, *args):
         return bytes_sent
     except Exception as e:
         return -1
+
 
 def recvLine(sock, buffer, size):
     """
@@ -256,6 +274,7 @@ def recvLine(sock, buffer, size):
     buffer[bytes_read] = 0  # Null-terminate the buffer
     return bytes_read
 
+
 def trim(param):
     """
     Removes leading and trailing whitespace from a string.
@@ -269,8 +288,10 @@ def trim(param):
     # Remove leading and trailing whitespace
     return param.strip()
 
+
 import os
 import signal
+
 
 def processCmd(param_count, params):
     """
@@ -287,151 +308,62 @@ def processCmd(param_count, params):
     if cmd == "TCP":
         if param_count < 6:
             return
-        ip = params[1]
-        port = int(params[2])
-        duration = int(params[3])
-        packets = int(params[4])
-        data = params[5]
-        threads = int(params[6]) if param_count >= 7 else 0
-        delay = int(params[7]) if param_count == 8 else 10
-
-        for target in ip.split(","):
-            if os.fork() == 0:
-                ftcp(target, port, duration, packets, data, threads, delay)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "UDP":
         if param_count < 6:
             return
-        ip = params[1]
-        port = int(params[2])
-        duration = int(params[3])
-        packets = int(params[4])
-        delay = int(params[5]) if param_count == 6 else 10
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                SendUDP(target, port, duration, packets, delay, 0x20)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "VSE":
         if param_count < 6:
             return
-        ip = params[1]
-        port = int(params[2])
-        duration = int(params[3])
-        packets = int(params[4])
-        data = int(params[5])
-        threads = int(params[6]) if param_count >= 7 else 1000
-        interval = int(params[7]) if param_count >= 8 else 1000000
-        extra = int(params[8]) if param_count >= 9 else 0
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                vseattack(target, port, duration, packets, data, threads, interval, extra)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "STDHEX":
         if param_count < 4:
             return
-        ip = params[1]
-        duration = int(params[2])
-        packets = int(params[3])
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                SendSTDHEX(target, duration, packets)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "STD":
         if param_count < 4:
             return
-        ip = params[1]
-        duration = int(params[2])
-        packets = int(params[3])
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                SendSTD(target, duration, packets)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "NFODROP":
         if param_count < 4:
             return
-        ip = params[1]
-        duration = int(params[2])
-        packets = int(params[3])
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                stdhexflood(target, duration, packets)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "OVHKILL":
         if param_count < 4:
             return
-        ip = params[1]
-        duration = int(params[2])
-        packets = int(params[3])
 
-        for target in ip.split(","):
-            if os.fork() == 0:
-                SendSTD_HEX(target, duration, packets)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "XMAS":
         if param_count < 4:
             return
-        ip = params[1]
-        duration = int(params[2])
-        packets = int(params[3])
-
-        for target in ip.split(","):
-            if os.fork() == 0:
-                rtcp(target, duration, packets, 0x20, 0x400, 10)  # Placeholder function
-                os._exit(0)
 
     elif cmd == "CRUSH":
         if param_count < 6:
             return
-        ip = params[1]
-        port = int(params[2])
-        duration = int(params[3])
-        packets = int(params[4])
-        data = params[5]
-        spoof = int(params[6]) if param_count >= 7 else 0
-        interval = int(params[7]) if param_count == 8 else 10
-
-        for target in ip.split(","):
-            if os.fork() == 0:
-                astd(target, port, duration, 0x5b4)  # Placeholder function
-                atcp(target, port, duration, packets, data, spoof, interval)  # Placeholder function
-                os.close(mainCommSock)
-                os._exit(0)
 
     elif cmd == "STOMP":
         if param_count < 6:
             return
-        ip = params[1]
-        port = int(params[2])
-        duration = int(params[3])
-        packets = int(params[4])
-        data = params[5]
-        spoof = int(params[6]) if param_count >= 7 else 0
-        interval = int(params[7]) if param_count == 8 else 10
-
-        for target in ip.split(","):
-            if os.fork() == 0:
-                astd(target, port, duration, spoof)  # Placeholder function
-                audp(target, port, duration, packets, spoof, interval)  # Placeholder function
-                atcp(target, port, duration, packets, data, spoof, interval)  # Placeholder function
-                os.close(mainCommSock)
-                os._exit(0)
 
     elif cmd == "STOP":
         for pid in pids:
             if pid != 0 and pid != os.getpid():
                 os.kill(pid, signal.SIGKILL)
+
+        # close the main communication socket
+        if mainCommSock is not None:
+            try:
+                mainCommSock.close()
+            except Exception as e:
+                print(f"Error closing main communication socket: {e}")
+            mainCommSock = None
+
 
 def ftcp(target, port, duration, packets, data, threads, delay):
     """
@@ -439,11 +371,13 @@ def ftcp(target, port, duration, packets, data, threads, delay):
     """
     pass
 
+
 def SendUDP(target, port, duration, packets, delay, flag):
     """
     Placeholder for the SendUDP function.
     """
     pass
+
 
 def vseattack(target, port, duration, packets, data, threads, interval, extra):
     """
@@ -451,11 +385,13 @@ def vseattack(target, port, duration, packets, data, threads, interval, extra):
     """
     pass
 
+
 def SendSTDHEX(target, duration, packets):
     """
     Placeholder for the SendSTDHEX function.
     """
     pass
+
 
 def SendSTD(target, duration, packets):
     """
@@ -463,11 +399,13 @@ def SendSTD(target, duration, packets):
     """
     pass
 
+
 def stdhexflood(target, duration, packets):
     """
     Placeholder for the stdhexflood function.
     """
     pass
+
 
 def SendSTD_HEX(target, duration, packets):
     """
@@ -475,11 +413,13 @@ def SendSTD_HEX(target, duration, packets):
     """
     pass
 
+
 def rtcp(target, duration, packets, flag1, flag2, delay):
     """
     Placeholder for the rtcp function.
     """
     pass
+
 
 def astd(target, port, duration, flag):
     """
@@ -487,11 +427,13 @@ def astd(target, port, duration, flag):
     """
     pass
 
+
 def atcp(target, port, duration, packets, data, spoof, interval):
     """
     Placeholder for the atcp function.
     """
     pass
+
 
 def audp(target, port, duration, packets, spoof, interval):
     """
@@ -499,12 +441,14 @@ def audp(target, port, duration, packets, spoof, interval):
     """
     pass
 
+
 def listFork():
     """
     Placeholder for the listFork function.
     Simulates forking a process.
     """
     return os.fork()
+
 
 def main():
     global numpids, pids, mainCommSock
@@ -516,12 +460,13 @@ def main():
 
     getOurIP()
 
-    if os.fork() != 0:
-        os.wait()
-        os._exit(0)
+    if daemon:
+        if os.fork() != 0:
+            os.wait()
+            os._exit(0)
 
-    if os.fork() != 0:
-        os._exit(0)
+        if os.fork() != 0:
+            os._exit(0)
 
     os.setsid()
     os.chdir("/")
@@ -531,10 +476,14 @@ def main():
         while initConnection() != 0:
             time.sleep(5)
 
+        print(f"\x1b[1;92mConnected to {commServer[currentServer]}\x1b[0m")
         architecture = getArch()
         our_port = getPortz()
-        ip = socket.inet_ntoa(socket.inet_aton(ourIP))
-        sockprintf(mainCommSock, "\x1b[1;95mDevice Connected: %s | Port: %s | Arch: %s\x1b[0m", ip, our_port, architecture)
+        ourIPStr = ".".join(map(str, ourIP))
+        ip = socket.inet_ntoa(socket.inet_aton(ourIPStr))
+        hello = "\x1b[1;95mDevice Connected: %s | Port: %s | Arch: %s\x1b[0m"
+        print(f"Sending hello: {hello % (ip, our_port, architecture)}")
+        sockprintf(mainCommSock, hello, ip, our_port, architecture)
 
         while True:
             buffer = bytearray(buffer_size)
@@ -552,14 +501,45 @@ def main():
             trim(buffer)
 
             if buffer.startswith("!"):
-                command_with_params = []
-                parts = buffer[1:].split(" ", 1)
-                if len(parts) > 1:
-                    command, params = parts
-                    params = params.strip().split(" ")
-                    command_with_params.append(command)
-                    command_with_params.extend(params)
+                command_line = buffer[1:].strip()
+                command_with_params = command_line.split(" ")
+                print(f"\033[94mReceived command: {command_with_params}\033[0m")
+                if command_with_params[0].upper() == "STOP":
+                    # Close the socket and exit the loop
+                    if mainCommSock:
+                        mainCommSock.close()
+                        mainCommSock = None
+                    break
+                if len(command_with_params) >= 1:
+                    command = command_with_params[0].upper()
+                    params = command_with_params[1:]
                     processCmd(len(command_with_params), command_with_params)
 
+
 if __name__ == "__main__":
+
+    print(f"\033[1;92mBot123 C2 Milker starting...\033[0m")
+
+    import argparse
+    parser = argparse.ArgumentParser(description="Bot123 C2 Milker")
+    # server IP, default to 'localhost'
+    # server port (default to 6969)
+    # deamonize option (default to False)
+    parser.add_argument('--server', type=str, default='0.0.0.0', help='Server IP address')
+    parser.add_argument('--port', type=int, default=6969, help='Server port number')
+    parser.add_argument('--daemonize', action='store_true', help='Run as a daemon (annoying to kill after)')
+    args = parser.parse_args()
+
+    server = args.server
+    port = args.port
+    daemonize = args.daemonize
+
+    if daemonize:
+        print(f"\033[1;91mRunning in daemon mode, to kill the program you need to use `killall -9 python3` or `kill -KILL {os.getpid()}`\033[0m")
+
+    commServer.append(f"{server}:{port}")
+    daemon = daemonize
+
+
+
     main()
