@@ -518,7 +518,7 @@ def main():
 
 if __name__ == "__main__":
 
-    print(f"\033[1;92mBot123 C2 Milker starting...\033[0m")
+
 
     import argparse
     parser = argparse.ArgumentParser(description="Bot123 C2 Milker")
@@ -534,8 +534,11 @@ if __name__ == "__main__":
     port = args.port
     daemonize = args.daemonize
 
+    print(f"\033[1;92mBot123 C2 Milker starting...\033[0m")
+
     if daemonize:
         print(f"\033[1;91mRunning in daemon mode, to kill the program you need to use `killall -9 python3` or `kill -KILL {os.getpid()}`\033[0m")
+        print("You won't be able to see anything in the terminal, but it will run in the background.")
 
     commServer.append(f"{server}:{port}")
     daemon = daemonize
