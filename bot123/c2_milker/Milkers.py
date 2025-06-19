@@ -6,6 +6,7 @@ import socket
 import fcntl
 import errno
 import select
+import logging
 
 # Global variables (placeholders)
 ourIP = [0, 0, 0, 0]
@@ -504,6 +505,8 @@ def main():
                 command_line = buffer[1:].strip()
                 command_with_params = command_line.split(" ")
                 print(f"\033[94mReceived command: {command_with_params}\033[0m")
+                logging.info("Received command: %s", command_line)
+
                 if command_with_params[0].upper() == "STOP":
                     # Close the socket and exit the loop
                     if mainCommSock:
@@ -533,6 +536,13 @@ if __name__ == "__main__":
     server = args.server
     port = args.port
     daemonize = args.daemonize
+
+    logging.basicConfig(
+        filename="commands.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
     print(f"\033[1;92mBot123 C2 Milker starting...\033[0m")
 
