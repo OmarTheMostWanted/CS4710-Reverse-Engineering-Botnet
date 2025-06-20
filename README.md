@@ -2,7 +2,6 @@
 
 # Analysis Methods
 ## Reverse Engineering and Decompiling
-### Omar
 
 #### 1. Initialization Code L: 5505 -> 5527
 
@@ -934,3 +933,158 @@ https://threatfox.abuse.ch/ioc/1460615/ - Flags it as a botnet endpoint linked t
 https://urlhaus.abuse.ch/url/3491280/ - Shows that ```http://45.11.229.181/a-r.m-6.Sakura``` was used to serve malware, probably the payload host.
 
 # Python Remake
+
+## Bot123 C2 Clone
+
+This is a simple Python-based Command and Control (C2) server clone designed for testing and reverse engineering the Bot123 botnet client (the "C2 milker"). It mimics the behavior of the real C2 server, allowing you to test bot connections and command handling when the original C2 server is offline or unresponsive.
+
+### How It Works
+
+- The C2 Clone listens for incoming TCP connections from bots on a configurable port (default: 6969).
+- When a bot connects, it expects a "hello" message in the format:
+  ```
+  \x1b[1;95mDevice Connected: <ip> | Port: <port> | Arch: <arch>\x1b[0m
+  ```
+- If the greeting is valid, the server sends a randomized sequence of attack commands (e.g., `! TCP ...`, `! UDP ...`, etc.) to the bot, simulating the real C2's behavior.
+- Each command is sent as a line, followed by a final `! STOP` command to instruct the bot to halt attacks.
+- All communication is line-based and uses UTF-8 encoding.
+- The server can handle multiple bot connections sequentially.
+
+---
+
+### Usage
+
+#### Prerequisites
+
+- Python 3.x
+
+#### Starting the C2 Clone
+
+1. Navigate to the directory containing `C2.py`:
+    ```sh
+    cd bot123/python_remake
+    ```
+
+2. Run the server:
+    ```sh
+    python3 C2.py
+    ```
+
+   By default, it listens on `0.0.0.0:6969`. You can modify `HOST` and `PORT` at the top of `C2.py` if needed.
+
+3. You should see output like:
+    ```
+    C2 clone started, waiting for bots...
+    ```
+
+4. When a bot connects, you will see:
+    ```
+    Connection from ('<bot_ip>', <bot_port>)
+    Sending command: ! TCP 127.0.0.1 80 5 128 test
+    ...
+    ```
+
+---
+
+#### Example Session
+
+1. Start the C2 Clone.
+2. Run your bot or C2 milker, configured to connect to the clone's IP and port.
+3. Observe the handshake and command exchange in the terminal.
+
+---
+
+### Notes
+
+- The command set and protocol are based on observing the real C2 and on the reverse engineering of the Bot123 bot.
+
+
+---
+
+### File Reference
+
+- [`bot123/python_remake/C2.py`](bot123/python_remake/C2.py): Main C2 clone server
+
+
+## Bot123 C2 Milker
+
+The **Bot123 C2 Milker** is a Python tool that emulates a bot client for the Bot123 botnet. It connects to a C2 server, sends a handshake, and logs all commands received from the server for analysis and reverse engineering.
+
+---
+
+### How It Works
+
+- The milker connects to a specified C2 server and port (default: `0.0.0.0:6969`).
+- On connection, it sends a "hello" message mimicking a real bot:
+  ```
+  \x1b[1;95mDevice Connected: <ip> | Port: <port> | Arch: <arch>\x1b[0m
+  ```
+- It listens for commands from the C2 server. Each command received is printed to the terminal and logged to `commands.log`.
+- The milker supports daemon mode, allowing it to run in the background.
+- If the connection drops, it attempts to reconnect every 5 seconds.
+
+---
+
+### Usage
+
+#### Prerequisites
+
+- Python 3.x
+
+#### Running the Milker
+
+1. Navigate to the directory containing `Milkers.py`:
+    ```sh
+    cd bot123/python_remake
+    ```
+
+2. Run the milker with the desired server and port:
+    ```sh
+    python3 Milkers.py --server <C2_IP> --port <C2_PORT>
+    ```
+    Example (for local C2 clone):
+    ```sh
+    python3 Milkers.py --server 127.0.0.1 --port 6969
+    ```
+
+3. To run in daemon mode (background, no terminal output):
+    ```sh
+    python3 Milkers.py --server 127.0.0.1 --port 6969 --daemonize
+    ```
+
+4. All received commands will be printed to the terminal and saved in `commands.log`.
+
+---
+
+### Example Output
+
+```
+Bot123 C2 Milker starting...
+Connecting to 127.0.0.1:6969 with timeout 30s...
+Connected to 127.0.0.1:6969
+Sending hello: \x1b[1;95mDevice Connected: 192.168.1.10 | Port: 22 | Arch: x86_64\x1b[0m
+Received command: ['TCP', '127.0.0.1', '80', '5', '128', 'test']
+Received command: ['STOP']
+```
+
+---
+
+### Command-Line Options
+
+- `--server <C2_IP>`: IP address of the C2 server (default: `0.0.0.0`)
+- `--port <C2_PORT>`: Port of the C2 server (default: `6969`)
+- `--daemonize`: Run as a background process (no terminal output)
+
+---
+
+### Notes
+
+- All received commands are logged to `commands.log` in the current directory.
+- The milker does not execute any attack commands; it only logs them.
+- If you run in daemon mode, you need to manually stop the milker using `kill` or similar command.
+
+---
+
+### File Reference
+
+- [`bot123/python_remake/Milkers.py`](bot123/python_remake/Milkers.py): Main C2 milker implementation

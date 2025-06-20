@@ -37,6 +37,19 @@ def init_rand(param_1):
 
 
 def getOurIP():
+    """
+    Attempts to determine the local machine's IP address and network interface.
+
+    This function creates a UDP socket and connects to a public DNS server (8.8.8.8) to determine the local IP address.
+    It then reads the system's routing table to find the default network interface. The code for retrieving the MAC address of the interface is present but commented out.
+
+    Global Variables:
+        ourIP (list of int): The local IP address as a list of integers.
+        macAddress: Intended to store the MAC address of the interface (currently not set).
+
+    Returns:
+        int: 1 if the operation is successful, 0 otherwise.
+    """
     global ourIP, macAddress
     try:
         # Create a socket
@@ -102,6 +115,16 @@ def fdgets(buffer, max_size, fd):
 
 
 def initConnection():
+    """
+    Initializes and establishes a connection to the current command and control server.
+
+    This function resets the main communication socket if it exists, updates the current server index,
+    parses the server's IP address and port (defaulting to 6966 if not specified), and attempts to
+    establish a TCP connection to the server with a timeout.
+
+    Returns:
+        bool: True if the connection was successful, False otherwise.
+    """
     global mainCommSock, currentServer, commServer
 
     ip = bytearray(524)  # Buffer for the IP
@@ -520,9 +543,6 @@ def main():
 
 
 if __name__ == "__main__":
-
-
-
     import argparse
     parser = argparse.ArgumentParser(description="Bot123 C2 Milker")
     # server IP, default to 'localhost'
